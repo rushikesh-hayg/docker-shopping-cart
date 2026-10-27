@@ -1,0 +1,116 @@
+---
+# ==============================================================================
+# Playbook: setup_server.yml
+# Purpose: Idempotent Server Provisioning (Docker, UFW, Directories, Users)
+# Target: Ubuntu 20.04/22.04 LTS Nodes
+# ==============================================================================
+- name: Provision Host Prerequisites & Hardening for Shopping Cart Nodes
+  hosts: cart_servers
+  become: true
+  vars:
+    required_packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - git
+      - ufw
+      - python3-pip
+      - python3-docker
+    docker_packages:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+
+  tasks:
+    - name: 1. Update apt cache conditionally
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: 2. Install baseline system utilities
+      ansible.builtin.apt:
+        name: "{{ required_packages }}"
+        state: present
+
+    - name: 3. Ensure Docker GPG keyring directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: 4. Add Docker official GPG key (Idempotent)
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+        force: false
+
+    - name: 5. Configure Docker upstream repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: 6. Install Docker Engine and Compose Plugin
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+
+    - name: 7. Ensure Docker service is enabled and started
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: 8. Create non-privileged deployment user
+      ansible.builtin.user:
+        name: cartapp
+        comment: "Application Deployment Service Account"
+        shell: /bin/bash
+        groups: docker
+        append: true
+        create_home: true
+
+    - name: 9. Create project runtime directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: cartapp
+        group: docker
+        mode: '0775'
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_dir }}/data"
+        - "{{ backup_dir }}"
+
+    - name: 10. Configure UFW Firewall rules (Idempotent)
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto | default('tcp') }}"
+        comment: "{{ item.comment }}"
+      loop:
+        - { port: '22', comment: 'Allow Secure Shell (SSH)' }
+        - { port: '80', comment: 'Allow HTTP Storefront Proxy' }
+        - { port: '443', comment: 'Allow HTTPS Secure Traffic' }
+        - { port: '5000', comment: 'Allow Backend Health Probes' }
+
+    - name: 11. Enforce UFW firewall enabled policy
+      community.general.ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: 12. Verify Docker daemon responsiveness
+      ansible.builtin.command: docker info
+      register: docker_info_result
+      changed_when: false
+
+    - name: 13. Output Host Readiness Status
+      ansible.builtin.debug:
+        msg: "✔ Host {{ inventory_hostname }} is fully provisioned, Dockerized, and protected by UFW."

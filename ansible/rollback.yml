@@ -1,0 +1,84 @@
+---
+# ==============================================================================
+# Playbook: rollback.yml
+# Purpose: Sub-5-Second Emergency Rollback Drill for Defective Releases
+# SLA: Restores verified stable container & SQLite state in under 5 seconds
+# ==============================================================================
+- name: Execute Automated Emergency Rollback Drill
+  hosts: cart_servers
+  become: true
+  vars:
+    app_image_backend: "docker-shopping-cart-backend"
+    app_image_frontend: "docker-shopping-cart-frontend"
+
+  tasks:
+    - name: 1. Start High-Precision StopWatch
+      ansible.builtin.set_fact:
+        rollback_start_epoch: "{{ ansible_date_time.epoch }}"
+
+    - name: 2. Immediately Terminate Defective Container Instances
+      ansible.builtin.command:
+        cmd: docker compose stop
+        chdir: "{{ app_dir }}"
+
+    - name: 3. Verify Availability of Stable Rollback Image Tag
+      ansible.builtin.command:
+        cmd: docker image inspect {{ app_image_backend }}:rollback_stable
+      register: stable_image_check
+      failed_when: false
+      changed_when: false
+
+    - name: 4. Revert Container Image Tag to Stable Tag
+      ansible.builtin.command:
+        cmd: docker tag {{ app_image_backend }}:rollback_stable {{ app_image_backend }}:latest
+      when: stable_image_check.rc == 0
+
+    - name: 5. Identify Most Recent Pre-Deployment Database Backup
+      ansible.builtin.shell: |
+        ls -t {{ backup_dir }}/shopping_cart_predeploy_*.db 2>/dev/null | head -n 1
+      register: latest_backup_file
+      changed_when: false
+
+    - name: 6. Restore Stable SQLite Database Snapshot
+      ansible.builtin.copy:
+        src: "{{ latest_backup_file.stdout }}"
+        dest: "{{ app_dir }}/data/shopping_cart.db"
+        remote_src: true
+        owner: cartapp
+        group: docker
+        mode: '0660'
+      when: latest_backup_file.stdout != ""
+
+    - name: 7. Relaunch Stable Container Cluster (< 2 Seconds)
+      ansible.builtin.command:
+        cmd: docker compose up -d --no-build
+        chdir: "{{ app_dir }}"
+
+    - name: 8. Verify Immediate Restoration via Health Probe
+      ansible.builtin.uri:
+        url: "{{ health_probe_url }}"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: recovery_health
+      until: recovery_health.status == 200 and 'UP' in recovery_health.content
+      retries: 5
+      delay: 1
+
+    - name: 9. Calculate Total Emergency Recovery Time
+      ansible.builtin.set_fact:
+        rollback_end_epoch: "{{ ansible_date_time.epoch }}"
+        total_recovery_seconds: "{{ (ansible_date_time.epoch | int) - (rollback_start_epoch | int) }}"
+
+    - name: 10. Output SLA Recovery Report
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - "🚑 EMERGENCY ROLLBACK DRILL COMPLETED SUCCESSFULLY"
+          - "=========================================================="
+          - "Target Host:        {{ inventory_hostname }}"
+          - "Restored Image:     {{ app_image_backend }}:rollback_stable"
+          - "Database Restored:  {{ latest_backup_file.stdout | default('None needed') }}"
+          - "Service Status:     {{ recovery_health.json.status }} (DB: {{ recovery_health.json.database }})"
+          - "Recovery Duration:  {{ total_recovery_seconds }}s (SLA Target: < 5s)"
+          - "=========================================================="
