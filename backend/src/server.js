@@ -28,6 +28,13 @@ if (NODE_ENV !== 'test') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Distributed Microservice Correlation Tracing (from develop branch)
+app.use((req, res, next) => {
+  const traceId = req.headers['x-correlation-id'] || `trace-${Date.now()}`;
+  res.setHeader('X-Correlation-ID', traceId);
+  next();
+});
+
 // REST API Router mounted under /api
 app.use('/api', apiRoutes);
 
