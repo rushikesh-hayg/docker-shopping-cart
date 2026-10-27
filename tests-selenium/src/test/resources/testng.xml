@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Dockerized Shopping Cart E2E Quality Gate" verbose="2">
+    <!-- Automated Failure Screenshot Listener -->
+    <listeners>
+        <listener class-name="com.devops.cart.listeners.ScreenshotListener" />
+    </listeners>
+
+    <test name="End-to-End Storefront and Checkout Flow">
+        <classes>
+            <class name="com.devops.cart.tests.ShoppingCartE2ETest" />
+        </classes>
+    </test>
+</suite>
