@@ -28,6 +28,13 @@ if (NODE_ENV !== 'test') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Checkout Audit & API Version Middleware (from feature/task-06-checkout-flow)
+app.use((req, res, next) => {
+  res.setHeader('X-API-Version', '1.0.0-mvp');
+  res.setHeader('X-Service-Layer', 'checkout-gateway');
+  next();
+});
+
 // REST API Router mounted under /api
 app.use('/api', apiRoutes);
 
