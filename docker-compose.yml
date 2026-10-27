@@ -1,0 +1,65 @@
+services:
+  # ============================================================================
+  # Backend REST API Service (Node.js Express + SQLite3)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: docker-shopping-cart-backend:1.0.0-mvp
+    container_name: cart-backend
+    restart: unless-stopped
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DB_PATH=/app/data/shopping_cart.db
+      - CORS_ORIGIN=*
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persistent named volume for SQLite database storage
+      - cart-db-data:/app/data
+    networks:
+      - cart-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ============================================================================
+  # Frontend & Reverse Proxy Service (Alpine Nginx)
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: docker-shopping-cart-frontend:1.0.0-mvp
+    container_name: cart-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cart-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+# ==============================================================================
+# Persistent Named Volumes & Network Topology
+# ==============================================================================
+volumes:
+  cart-db-data:
+    name: cart-db-data
+    driver: local
+
+networks:
+  cart-network:
+    name: cart-network
+    driver: bridge

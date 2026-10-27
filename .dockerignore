@@ -1,0 +1,32 @@
+# VCS
+.git/
+.gitignore
+.github/
+
+# Local databases and journals
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+data/
+backend/data/
+
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Selenium and Test Artifacts
+tests-selenium/
+target/
+test-output/
+reports/
+screenshots/
+
+# Ansible
+ansible/
+
+# Documentation and configs
+README.md
+.env
+.env.*
+*.log
