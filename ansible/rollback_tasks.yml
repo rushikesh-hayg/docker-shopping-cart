@@ -1,0 +1,28 @@
+---
+# Reusable tasks included in rescue blocks during deployment failure
+- name: Emergency Rescue - Stop Defective Containers
+  ansible.builtin.command:
+    cmd: docker compose stop
+    chdir: "{{ app_dir }}"
+
+- name: Emergency Rescue - Re-tag Stable Rollback Image
+  ansible.builtin.command:
+    cmd: docker tag {{ app_image_backend }}:rollback_stable {{ app_image_backend }}:latest
+  failed_when: false
+
+- name: Emergency Rescue - Relaunch Last Known Stable Stack
+  ansible.builtin.command:
+    cmd: docker compose up -d --no-build
+    chdir: "{{ app_dir }}"
+
+- name: Emergency Rescue - Probe Service Recovery
+  ansible.builtin.uri:
+    url: "{{ health_probe_url }}"
+    method: GET
+    status_code: 200
+  retries: 5
+  delay: 1
+
+- name: Fail Playbook After Successful Rollback
+  ansible.builtin.fail:
+    msg: "Deployment failed due to '{{ failure_reason }}'. Stable state restored automatically under emergency protocol."

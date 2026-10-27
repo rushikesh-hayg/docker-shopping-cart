@@ -1,0 +1,91 @@
+---
+# ==============================================================================
+# Playbook: deploy_app.yml
+# Purpose: Zero-Downtime Deployment with Automated Pre-Flight DB Backup
+# Target: Staging and Production Nodes
+# ==============================================================================
+- name: Deploy Containerized Shopping Cart Application
+  hosts: cart_servers
+  become: true
+  vars:
+    app_image_backend: "docker-shopping-cart-backend"
+    app_image_frontend: "docker-shopping-cart-frontend"
+    image_tag: "{{ target_tag | default('latest') }}"
+
+  tasks:
+    - name: 1. Verify Application Directory Exists
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: cartapp
+        group: docker
+        mode: '0775'
+
+    - name: 2. Check for Existing SQLite Database
+      ansible.builtin.stat:
+        path: "{{ app_dir }}/data/shopping_cart.db"
+      register: db_stat
+
+    - name: 3. Perform Pre-Flight Database Snapshot Backup
+      ansible.builtin.copy:
+        src: "{{ app_dir }}/data/shopping_cart.db"
+        dest: "{{ backup_dir }}/shopping_cart_predeploy_{{ ansible_date_time.iso8601_basic_short }}.db"
+        remote_src: true
+        owner: cartapp
+        group: docker
+        mode: '0660'
+      when: db_stat.stat.exists
+
+    - name: 4. Preserve Current Stable Image for Emergency Rollback Drill
+      ansible.builtin.shell: |
+        if docker image inspect {{ app_image_backend }}:latest > /dev/null 2>&1; then
+          docker tag {{ app_image_backend }}:latest {{ app_image_backend }}:rollback_stable
+        fi
+      changed_when: false
+      failed_when: false
+
+    - name: 5. Synchronize Project Orchestration Files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ app_dir }}/{{ item.dest }}"
+        owner: cartapp
+        group: docker
+        mode: "{{ item.mode | default('0644') }}"
+      loop:
+        - { src: "../docker-compose.yml", dest: "docker-compose.yml" }
+        - { src: "../.env.example", dest: ".env" }
+
+    - name: 6. Block: Deploy and Health Check with Automated Rescue Rollback
+      block:
+        - name: 6a. Pull Latest Images & Launch Container Cluster
+          ansible.builtin.command:
+            cmd: docker compose up -d --remove-orphans
+            chdir: "{{ app_dir }}"
+          register: compose_launch_result
+
+        - name: 6b. Wait for Backend Service Readiness Probe (Port 5000)
+          ansible.builtin.uri:
+            url: "{{ health_probe_url }}"
+            method: GET
+            status_code: 200
+            return_content: true
+          register: health_response
+          until: health_response.status == 200 and 'UP' in health_response.content
+          retries: 10
+          delay: 2
+
+        - name: 6c. Verify Frontend Reverse Proxy HTTP 200
+          ansible.builtin.uri:
+            url: "http://localhost/health"
+            method: GET
+            status_code: 200
+
+        - name: 6d. Deployment Success Confirmation
+          ansible.builtin.debug:
+            msg: "🎉 Deployment successful on {{ inventory_hostname }}! Service is live and verified healthy."
+
+      rescue:
+        - name: 🚨 DEPLOYMENT FAILED - Triggering Automated Rollback Drill
+          ansible.builtin.include_tasks: rollback_tasks.yml
+          vars:
+            failure_reason: "Post-deployment health probe failed to reach UP state within timeout"
