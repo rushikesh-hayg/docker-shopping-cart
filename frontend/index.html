@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudCart | Dockerized Shopping Cart & DevOps Lab</title>
+  <meta name="description" content="Production Dockerized Shopping Cart with Express, SQLite, and Nginx reverse proxy">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header & Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-logo" id="brand-logo">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">CloudCart</span>
+          <span class="brand-badge">DevOps Lab</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-links">
+        <button id="nav-store-btn" class="nav-btn active">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          Storefront
+        </button>
+        <button id="nav-admin-btn" class="nav-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          Admin Metrics
+        </button>
+      </nav>
+
+      <!-- Search & Cart Action Group -->
+      <div class="header-actions">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search catalog (e.g. Docker, Keyboard)..." autocomplete="off">
+          <button id="search-clear-btn" class="search-clear-btn hidden">&times;</button>
+        </div>
+
+        <button id="cart-drawer-toggle" class="cart-trigger-btn" aria-label="Open Cart">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="cart-label">Cart</span>
+          <span id="cart-counter" class="cart-counter">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Health & System Status Bar -->
+  <div class="system-status-bar">
+    <div class="status-container">
+      <div class="status-item">
+        <span class="status-dot online"></span>
+        <span class="status-label">Backend Health:</span>
+        <span id="backend-health-text" class="status-value">Checking...</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Architecture:</span>
+        <span class="status-code">Nginx:80 &rarr; Express:5000 &rarr; SQLite3</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Cluster Pod:</span>
+        <span class="status-code" id="cluster-pod-id">cart-node-prod-01</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+    <!-- View 1: Storefront Section -->
+    <section id="storefront-section" class="view-section active">
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div class="hero-content">
+          <span class="hero-tag">Automated DevOps Showcase</span>
+          <h1 class="hero-title">Dockerized Shopping Cart & Checkout Lab</h1>
+          <p class="hero-subtitle">Production-grade full-stack architecture running containerized microservices, atomic SQLite checkout transactions, and CI/CD automation.</p>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="filter-controls">
+        <div class="category-pills" id="category-pills">
+          <button class="pill-btn active" data-category="ALL">All Gear</button>
+          <button class="pill-btn" data-category="Books">Books</button>
+          <button class="pill-btn" data-category="Apparel">Apparel</button>
+          <button class="pill-btn" data-category="Hardware">Hardware</button>
+          <button class="pill-btn" data-category="Accessories">Accessories</button>
+        </div>
+        <div class="catalog-summary">
+          Showing <span id="catalog-count">0</span> items
+        </div>
+      </div>
+
+      <!-- Catalog Products Grid -->
+      <div id="catalog-grid" class="catalog-grid">
+        <!-- Injected via JavaScript -->
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Connecting to backend API & initializing SQLite catalog...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 2: Admin Dashboard Section -->
+    <section id="admin-section" class="view-section hidden">
+      <div class="admin-header">
+        <div>
+          <h2 class="section-title">Telemetry & Admin Dashboard</h2>
+          <p class="section-subtitle">Real-time financial metrics, database transaction counters, and low-inventory alerts.</p>
+        </div>
+        <button id="refresh-stats-btn" class="secondary-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Refresh Telemetry
+        </button>
+      </div>
+
+      <!-- Metric Cards Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Gross Revenue</span>
+            <span class="stat-icon revenue-icon">$</span>
+          </div>
+          <div class="stat-value" id="stat-revenue">$0.00</div>
+          <span class="stat-desc">Settled atomic transactions</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Total Orders</span>
+            <span class="stat-icon orders-icon">#</span>
+          </div>
+          <div class="stat-value" id="stat-orders">0</div>
+          <span class="stat-desc">Completed orders in database</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Units Sold</span>
+            <span class="stat-icon items-icon">&Sigma;</span>
+          </div>
+          <div class="stat-value" id="stat-items-sold">0</div>
+          <span class="stat-desc">Deducted from warehouse stock</span>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Low Stock Alerts</span>
+            <span class="stat-icon alert-icon">&excl;</span>
+          </div>
+          <div class="stat-value" id="stat-low-stock">0</div>
+          <span class="stat-desc">SKUs with &le; 15 units remaining</span>
+        </div>
+      </div>
+
+      <!-- Tables Section -->
+      <div class="admin-tables-layout">
+        <!-- Top Products Table -->
+        <div class="table-card">
+          <h3 class="table-card-title">Top Selling SKUs</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Stock Left</th>
+                  <th>Units Sold</th>
+                  <th>Revenue</th>
+                </tr>
+              </thead>
+              <tbody id="top-products-tbody">
+                <tr><td colspan="5" class="empty-cell">No sales recorded yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Orders Table -->
+        <div class="table-card">
+          <h3 class="table-card-title">Recent Transactions (Audited)</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Customer</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="recent-orders-tbody">
+                <tr><td colspan="5" class="empty-cell">No transactions yet. Place an order in storefront!</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Cart Slide-out Drawer Overlay -->
+  <div id="cart-backdrop" class="modal-backdrop hidden"></div>
+  <aside id="cart-drawer" class="cart-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <h2 class="drawer-title">Shopping Cart</h2>
+        <span id="drawer-item-count" class="drawer-subtitle">0 items</span>
+      </div>
+      <button id="cart-close-btn" class="close-btn" aria-label="Close Cart">&times;</button>
+    </div>
+
+    <!-- Cart Items Scrollable List -->
+    <div id="cart-items-container" class="drawer-body">
+      <!-- Empty Cart State -->
+      <div class="empty-cart-state">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <p>Your shopping cart is currently empty.</p>
+        <button id="empty-cart-browse-btn" class="primary-btn sm">Explore Catalog</button>
+      </div>
+    </div>
+
+    <!-- Drawer Footer Checkout -->
+    <div id="drawer-footer" class="drawer-footer hidden">
+      <div class="drawer-summary">
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <span id="drawer-subtotal" class="summary-amount">$0.00</span>
+        </div>
+        <div class="summary-line highlight">
+          <span>Shipping & Taxes</span>
+          <span class="text-success">FREE (DevOps Demo)</span>
+        </div>
+        <div class="summary-line total-line">
+          <span>Order Total</span>
+          <span id="drawer-total" class="total-amount">$0.00</span>
+        </div>
+      </div>
+
+      <button id="open-checkout-modal-btn" class="primary-btn btn-block">
+        Proceed to Checkout
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Atomic Checkout Modal Dialog -->
+  <div id="checkout-modal" class="modal-wrapper hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Finalize Order & Deduct Stock</h3>
+        <button id="checkout-close-btn" class="close-btn">&times;</button>
+      </div>
+      <form id="checkout-form" class="modal-body" novalidate>
+        <div class="form-banner">
+          <span class="badge-tag">Atomic Transaction</span>
+          <p>Orders are committed via SQLite transactions. Inventory is verified and decremented in real-time.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="cust-name">Full Name *</label>
+          <input type="text" id="cust-name" placeholder="e.g. Rushikesh DevOps" required>
+        </div>
+
+        <div class="form-group">
+          <label for="cust-email">Email Address *</label>
+          <input type="email" id="cust-email" placeholder="e.g. rushikesh@company.com" required>
+        </div>
+
+        <div class="order-summary-box">
+          <div class="summary-row">
+            <span>Items to Purchase:</span>
+            <span id="checkout-item-count">0</span>
+          </div>
+          <div class="summary-row total-highlight">
+            <span>Total Payable:</span>
+            <span id="checkout-total-amount">$0.00</span>
+          </div>
+        </div>
+
+        <div id="checkout-error-msg" class="form-error hidden"></div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancel-checkout-btn" class="secondary-btn">Cancel</button>
+          <button type="submit" id="submit-order-btn" class="primary-btn">
+            <span class="btn-text">Confirm & Pay</span>
+            <div class="btn-spinner hidden"></div>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Order Receipt Success Modal -->
+  <div id="success-modal" class="modal-wrapper hidden">
+    <div class="modal-dialog success-dialog">
+      <div class="success-icon-wrapper">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#10b981" stroke-width="2.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h3 class="success-title">Order Placed Successfully!</h3>
+      <p class="success-subtitle">Your transaction has been securely persisted to SQLite database.</p>
+      
+      <div class="receipt-box" id="order-receipt-content">
+        <!-- Rendered via JS -->
+      </div>
+
+      <div class="modal-actions center">
+        <button id="success-dismiss-btn" class="primary-btn">Back to Catalog</button>
+        <button id="view-admin-after-order-btn" class="secondary-btn">View in Admin Stats</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
