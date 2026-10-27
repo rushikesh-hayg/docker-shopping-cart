@@ -1,0 +1,35 @@
+{
+  "name": "docker-shopping-cart-backend",
+  "version": "1.0.0",
+  "description": "Production REST API for Dockerized Shopping Cart application with SQLite3 persistence",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node -e \"require('./src/db').initDb(true)\"",
+    "test": "node test/api.test.js"
+  },
+  "keywords": [
+    "express",
+    "sqlite3",
+    "docker",
+    "shopping-cart",
+    "devops"
+  ],
+  "author": "DevOps Architect",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "morgan": "^1.10.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
