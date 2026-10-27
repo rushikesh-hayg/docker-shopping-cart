@@ -28,10 +28,12 @@ if (NODE_ENV !== 'test') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Distributed Microservice Correlation Tracing (from develop branch)
+// Telemetry & Tracing: Correlation ID and Service Layer Versioning
 app.use((req, res, next) => {
   const traceId = req.headers['x-correlation-id'] || `trace-${Date.now()}`;
   res.setHeader('X-Correlation-ID', traceId);
+  res.setHeader('X-API-Version', '1.0.0-mvp');
+  res.setHeader('X-Service-Layer', 'checkout-gateway');
   next();
 });
 
