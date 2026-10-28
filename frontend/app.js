@@ -4,14 +4,22 @@
  */
 
 // Dynamic API Base Resolution:
-// - Behind Nginx (Port 80/443 or default proxy): uses relative '/api'
-// - Direct backend testing (Port 5000): uses '/api'
-// - Local live-server (e.g. Port 5500, 3000): points to 'http://localhost:5000/api'
-const API_BASE = (window.location.port === '5000') 
-  ? '/api' 
-  : (window.location.hostname === 'localhost' && window.location.port !== '80' && window.location.port !== '') 
-    ? 'http://localhost:5000/api' 
-    : '/api';
+// - Behind Nginx (Port 80/443 over http/https): uses relative '/api'
+// - Direct Express backend (Port 5000): uses relative '/api'
+// - Local file (file://), Live Server, 127.0.0.1, or port 3000: points to 'http://localhost:5000/api'
+function resolveApiBase() {
+  if (window.location.protocol === 'file:') {
+    return 'http://localhost:5000/api';
+  }
+  if (window.location.port === '5000') {
+    return '/api';
+  }
+  if ((window.location.port === '80' || window.location.port === '443' || window.location.port === '') && window.location.protocol.startsWith('http')) {
+    return '/api';
+  }
+  return 'http://localhost:5000/api';
+}
+let API_BASE = resolveApiBase();
 
 // Application State
 const state = {
@@ -173,13 +181,23 @@ function initEventListeners() {
 // ============================================================================
 async function checkHealth() {
   try {
-    const res = await fetch(`${API_BASE}/health`);
-    if (res.ok) {
+    let res = await fetch(`${API_BASE}/health`).catch(() => null);
+    if (!res || !res.ok) {
+      if (API_BASE !== 'http://localhost:5000/api') {
+        const fallbackRes = await fetch('http://localhost:5000/api/health').catch(() => null);
+        if (fallbackRes && fallbackRes.ok) {
+          API_BASE = 'http://localhost:5000/api';
+          res = fallbackRes;
+        }
+      }
+    }
+    if (res && res.ok) {
       const data = await res.json();
       state.healthStatus = 'ONLINE';
       DOM.backendHealthText.textContent = `Online (${data.status} - Uptime: ${data.uptime_seconds}s)`;
       DOM.backendHealthText.style.color = 'var(--status-green)';
       DOM.statusDot.className = 'status-dot online';
+      return true;
     } else {
       throw new Error('Health check returned non-200');
     }
@@ -188,6 +206,7 @@ async function checkHealth() {
     DOM.backendHealthText.textContent = 'Disconnected / Service Down';
     DOM.backendHealthText.style.color = 'var(--status-rose)';
     DOM.statusDot.className = 'status-dot offline';
+    return false;
   }
 }
 
@@ -201,8 +220,17 @@ async function loadProducts() {
       url += `?category=${encodeURIComponent(state.activeCategory)}`;
     }
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    let res = await fetch(url).catch(() => null);
+    if (!res || !res.ok) {
+      // Fallback probe directly against port 5000
+      if (API_BASE !== 'http://localhost:5000/api') {
+        API_BASE = 'http://localhost:5000/api';
+        url = `${API_BASE}/products${state.activeCategory !== 'ALL' ? `?category=${encodeURIComponent(state.activeCategory)}` : ''}`;
+        res = await fetch(url).catch(() => null);
+      }
+    }
+
+    if (!res || !res.ok) throw new Error(`HTTP error ${res ? res.status : 'offline'}`);
     const body = await res.json();
 
     state.products = body.data || [];

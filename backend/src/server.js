@@ -48,8 +48,12 @@ app.use((req, res, next) => {
 // REST API Router mounted under /api
 app.use('/api', apiRoutes);
 
-// Root fallback & info
+// Root Route: Serve Storefront if available, otherwise API info
 app.get('/', (req, res) => {
+  const frontendIndexFile = path.join(frontendStaticDir, 'index.html');
+  if (fs.existsSync(frontendIndexFile)) {
+    return res.sendFile(frontendIndexFile);
+  }
   res.json({
     name: 'Dockerized Shopping Cart REST API',
     version: '1.0.0',
