@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,13 +13,19 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Security Middleware
-app.use(helmet());
+// Security Middleware (Relax CSP for demo fonts & product images)
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Serve Static Frontend Storefront (zero-setup local development)
+const frontendStaticDir = path.resolve(__dirname, '../../frontend');
+if (fs.existsSync(frontendStaticDir)) {
+  app.use(express.static(frontendStaticDir));
+}
 
 // Request Logging
 if (NODE_ENV !== 'test') {
