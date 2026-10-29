@@ -54,7 +54,7 @@ PORT=5000
 DB_PATH=./data/shopping_cart.db
 APP_URL=http://localhost
 
----
+
 
 ## 4. GitHub Issue Governance Templates
 
