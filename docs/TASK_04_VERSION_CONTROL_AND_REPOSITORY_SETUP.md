@@ -56,18 +56,3 @@ APP_URL=http://localhost
 
 
 
-## 4. GitHub Issue Governance Templates
-
-Standardized templates are established under `.github/ISSUE_TEMPLATE/` to structure defect tracking and feature proposals:
-* `bug_report.md`: Requires reproducible steps, expected behavior, observed logs, and screenshots.
-* `feature_request.md`: Requires problem context, proposed implementation, and alignment with MVP scope.
-
----
-
-## 5. Branch Protection Rules
-
-To safeguard software stability, `main` and `develop` enforce:
-1. Pull Requests (PRs) required before merging.
-2. Minimum of 1 peer code review approval required.
-3. Automated test quality gates in CI must pass prior to merge.
-4. Force pushes (`git push --force`) strictly denied.
