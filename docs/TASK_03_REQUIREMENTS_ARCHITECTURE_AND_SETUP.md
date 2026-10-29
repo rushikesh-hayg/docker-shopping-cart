@@ -48,8 +48,50 @@ The Dockerized Shopping Cart and Checkout Application follows a decoupled, cloud
 | **Memory Footprint** | ~15 MB container image layer | ~250 MB JVM runtime footprint[cite: 3] | Nginx aligns with our Task 1 KPI of keeping containers minimal and performant[cite: 1]. |
 
 ---
+## 3. Database Schema & Data Dictionary
 
+### Table 1: `products`
+Stores merchandise catalog items available for checkout:
+CREATE TABLE IF NOT EXISTS products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  price REAL NOT NULL,
+  stock INTEGER NOT NULL,
+  category TEXT NOT NULL
+);
 
+### Table 2: `orders`
+Stores completed checkout transactions:
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  customer_name TEXT NOT NULL,
+  customer_email TEXT NOT NULL,
+  total_amount REAL NOT NULL,
+  status TEXT DEFAULT 'PROCESSING',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+---
+
+## 4. REST API Specification
+
+| HTTP Method | Endpoint URI | Description | Success Code | Error Code |
+|---|---|---|---|---|
+| `GET` | `/api/health` | Service liveness probe & SQLite connectivity check | `200 OK` | `500 Server Error` |
+| `GET` | `/api/products` | Retrieve catalog with optional query `?search=<term>` | `200 OK` | `500 Server Error` |
+| `POST` | `/api/checkout` | Process order payload and atomically decrement stock | `201 Created` | `400 Bad Request` |
+| `GET` | `/api/dashboard/stats` | Aggregate order counts, gross revenue, and low stock items | `200 OK` | `500 Server Error` |
+
+---
+
+## 5. Local Environment Baseline & Dependency Tree
+* **Runtime**: Node.js 20 LTS
+* **Express**: Fast, unopinionated minimalist web framework
+* **CORS**: Cross-origin middleware for local development convenience
+* **dotenv**: Zero-dependency environment variable parser
+* **sqlite3**: Asynchronous, non-blocking SQLite3 bindings
+* **Environment Configuration**: Managed via root `.env.example` and local `.env`
 
 
 
