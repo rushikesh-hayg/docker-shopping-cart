@@ -63,7 +63,9 @@ CREATE TABLE IF NOT EXISTS products (
   category TEXT NOT NULL
 );
 
-
+### Table 1: `products`
+Stores merchandise catalog items available for checkout[cite: 3]:
+```sql
 
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
