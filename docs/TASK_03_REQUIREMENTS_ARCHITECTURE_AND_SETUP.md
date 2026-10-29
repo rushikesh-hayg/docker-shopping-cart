@@ -72,6 +72,3 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
----
-
-## 4. REST API SpecificationHTTP MethodEndpoint URIDescriptionSuccess CodeError CodeGET/api/healthService liveness probe & SQLite connectivity check[cite: 3]200 OK500 Server ErrorGET/api/productsRetrieve catalog with optional query ?search=<term>   200 OK500 Server ErrorPOST/api/checkoutProcess order payload and atomically decrement stock   201 Created400 Bad RequestGET/api/dashboard/statsAggregate order counts, gross revenue, and low stock items   200 OK
