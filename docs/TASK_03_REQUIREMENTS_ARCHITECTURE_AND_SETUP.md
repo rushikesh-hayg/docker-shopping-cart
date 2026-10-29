@@ -4,3 +4,4 @@
 
 The Dockerized Shopping Cart and Checkout Application follows a decoupled, cloud-native 3-tier architectural pattern:
 
+
