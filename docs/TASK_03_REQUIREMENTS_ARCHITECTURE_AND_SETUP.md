@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS products (
   category TEXT NOT NULL
 );
 
-### Table 2: `products`
+### Table 2: `orders`
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   customer_name TEXT NOT NULL,
