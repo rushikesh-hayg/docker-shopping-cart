@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 ### Table 2: `orders`
+
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   customer_name TEXT NOT NULL,
