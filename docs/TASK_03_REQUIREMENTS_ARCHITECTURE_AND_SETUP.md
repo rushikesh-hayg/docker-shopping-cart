@@ -49,19 +49,7 @@ The Dockerized Shopping Cart and Checkout Application follows a decoupled, cloud
 
 ---
 
-## 3. Database Schema & Data Dictionary
 
-### Table 1: `products`
-Stores merchandise catalog items available for checkout[cite: 3]:
-```sql
-CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  description TEXT,
-  price REAL NOT NULL,
-  stock INTEGER NOT NULL,
-  category TEXT NOT NULL
-);
 
 
 
