@@ -59,3 +59,40 @@
 ## 3. Kanban Task Board Snapshot
 
 ![Kanban Task Board](screenshots/kanban_board.png)
+
+---
+
+## 4. Definition of Done (DoD) Checklist
+
+No task is marked as **DONE** unless it strictly satisfies every item in this checklist[cite: 2]:
+1. **Functional Acceptance**: Code implements the specified user story logic and passes manual verification[cite: 2].
+2. **Automated Testing**: Unit tests and Selenium regression tests pass with zero failures[cite: 2].
+3. **Docker Standards**: Dockerfiles build using multi-stage targets, run as non-root user `node`, and remain lightweight (< 100 MB)[cite: 1, 2, 11].
+4. **Security Compliance**: Zero committed secrets or database binaries in Git history (`.gitignore` active)[cite: 1, 2, 4].
+5. **Orchestration Stability**: Containers start healthy and report valid status via `/api/health` probes[cite: 2, 11].
+6. **Technical Documentation**: Each deliverable has corresponding Markdown documentation and clean Conventional Commits[cite: 2, 4].
+
+---
+
+## 5. End-to-End DevOps Lifecycle Architecture
+
+```
++---------------------------------------------------------------------------------------------------------+
+|                                DEVOPS CONTINUOUS LIFECYCLE FOR SHOPPING CART                            |
++---------------------------------------------------------------------------------------------------------+
+|                                                                                                         |
+|   [ 1. PLAN ]   ======>   [ 2. CODE ]   ======>   [ 3. BUILD ]   ======>   [ 4. TEST ]                  |
+|   * Tasks 01, 02          * Tasks 03, 04, 05, 06  * Tasks 07, 11            * Tasks 09, 10              |
+|   * User Stories          * Feature branches      * Multi-stage Docker      * Selenium TestNG suite     |
+|   * Product Backlog       * Express & SQLite APIs * Minimal Alpine image    * Headless Chrome checks    |
+|   * DoD Agreement         * Git Conventional Msg  * Clean layer caching     * Failure screenshots       |
+|                                                                                    ||                   |
+|                                                                                    \/                   |
+|   [ 8. MONITOR ] <======  [ 7. OPERATE ] <======  [ 6. DEPLOY ] <======  [ 5. RELEASE ]                 |
+|   * Task 15               * Tasks 13, 14          * Tasks 08, 12            * Tasks 06, 12              |
+|   * Healthcheck probes    * Ansible idempotency   * Container replacement   * Semantic Git Tagging      |
+|   * Troubleshooting       * Auto-restart policy   * Volume mount (/data)    * Push to Docker Hub        |
+|   * Runbook audit         * 5s instant rollback   * Zero-downtime rollout   * Build fingerprinting      |
+|                                                                                                         |
++---------------------------------------------------------------------------------------------------------+
+```

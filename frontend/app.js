@@ -6,8 +6,9 @@
 // Dynamic API Base Resolution:
 // - Behind Nginx (Port 80/443 over http/https): uses relative '/api'
 // - Direct Express backend (Port 5000): uses relative '/api'
-// - Local file (file://), Live Server, 127.0.0.1, or port 3000: points to 'http://localhost:5000/api'
+// - Local file (file://), Live Server, 127.0.0.1, or port 3000: points to 'http://<host>:5000/api'
 function resolveApiBase() {
+  const host = window.location.hostname || 'localhost';
   if (window.location.protocol === 'file:') {
     return 'http://localhost:5000/api';
   }
@@ -17,7 +18,7 @@ function resolveApiBase() {
   if ((window.location.port === '80' || window.location.port === '443' || window.location.port === '') && window.location.protocol.startsWith('http')) {
     return '/api';
   }
-  return 'http://localhost:5000/api';
+  return `${window.location.protocol}//${host}:5000/api`;
 }
 let API_BASE = resolveApiBase();
 
