@@ -28,3 +28,37 @@ The Dockerized Shopping Cart and Checkout Application follows a decoupled, cloud
 |      * Capabilities: ACID transaction safety for atomic inventory deductions          |
 |                                                                                       |
 +---------------------------------------------------------------------------------------+
+
+---
+
+## 2. Technology Evaluations & Architectural Decisions
+
+### Evaluation 1: Database Engine (SQLite3 vs. PostgreSQL / MySQL)
+| Metric | SQLite3 (Chosen) | PostgreSQL / MySQL | Decision Rationale |
+|---|---|---|---|
+| **Resource Overhead** | Minimal (< 5 MB RAM) | Heavy (150 MB - 500 MB RAM base) | SQLite runs inside the backend container process without requiring a separate database daemon. |
+| **Setup & Dependencies** | Zero-configuration single file | Requires network setup, user grants, TCP ports | Perfect for portable single-command Docker provisioning (`docker run` / Compose)[cite: 1, 2, 3]. |
+| **Concurrency & ACID** | Full ACID transactions with file-level locking | Row-level locking for enterprise scale | For our frozen MVP checkout volume, SQLite transactions are fully ACID-compliant and sufficient[cite: 1, 3]. |
+
+### Evaluation 2: Reverse Proxy & Static Server (Nginx vs. Apache Tomcat)
+| Metric | Nginx (Chosen) | Apache Tomcat | Decision Rationale |
+|---|---|---|---|
+| **Primary Design Intent** | High-concurrency reverse proxy & static asset server | Java Servlet & JSP Container (.war applications) | Tomcat carries 250 MB+ JVM overhead and is tailored for Java WAR files. Our app is lightweight Node.js/JS. |
+| **API Path Forwarding** | Native `proxy_pass` directive for `/api/` routing | Complex XML connector configuration | Nginx enables same-origin access (`http://localhost/api/*`), completely eliminating CORS pre-flight latency. |
+| **Memory Footprint** | ~15 MB container image layer | ~250 MB JVM runtime footprint[cite: 3] | Nginx aligns with our Task 1 KPI of keeping containers minimal and performant[cite: 1]. |
+
+---
+
+## 3. Database Schema & Data Dictionary
+
+### Table 1: `products`
+Stores merchandise catalog items available for checkout[cite: 3]:
+```sql
+CREATE TABLE IF NOT EXISTS products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  price REAL NOT NULL,
+  stock INTEGER NOT NULL,
+  category TEXT NOT NULL
+);
