@@ -72,4 +72,4 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
---
+---
